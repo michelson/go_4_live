@@ -10,6 +10,7 @@ import(
 var Cfg = Config{host: "localhost", send_port: 7402, receive_port: 7403}
 var conn = NewLiveConnection(Cfg.host, Cfg.send_port, Cfg.receive_port) //client(&config)
 var channel chan string = make(chan string)
+var server_response []*osc.OscMessage  //[]interface{}
 
 func main(){
 
@@ -21,7 +22,7 @@ func main(){
 
 func pinger() {
     for {
-      conn.Send( "/live_path", int32(111) , string("hola"))
+      conn.Send( "/live_path", true, int32(111), string("hola"))
       time.Sleep(time.Second * 1)
     }
 }
@@ -59,28 +60,30 @@ func (conn *LiveConnection) ListenAndServe(){
 
   //si
   conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
-      fmt.Println("Received message from " + msg)
-      //@response << [msg.address, msg.args]
+    fmt.Println("Received message from ", msg)
+    server_response = append(server_response, msg )
+    //@response << [msg.address, msg.args]
   })
 
   //ss
   conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
-      fmt.Println("Received message from " + msg)
-      //@response << [msg.address, msg.args]
+    fmt.Println("Received message from ", msg)
+    server_response = append(server_response, msg )
+    //@response << [msg.address, msg.args]
   })
 
   //s*
   conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
-      fmt.Println("Received message from " + msg)
-      //@response << [msg.address, msg.args]
-  })
-
-  //ssi
-  conn.server.AddMsgHandler("/slot3", func(msg *osc.OscMessage) {
-    fmt.Println("Received message from " + msg)
+    fmt.Println("Received message from ", msg)
+    server_response = append(server_response, msg )
     //@response << [msg.address, msg.args]
   })
-
+  //ssi
+  conn.server.AddMsgHandler("/slot3", func(msg *osc.OscMessage) {
+    fmt.Println("Received message from ", msg)
+    server_response = append(server_response, msg )
+    //@response << [msg.address, msg.args]
+  })
 
   fmt.Printf("Listening on %s:%d\n", conn.host, conn.receive_port)
   err := conn.server.ListenAndServe()
@@ -90,7 +93,7 @@ func (conn *LiveConnection) ListenAndServe(){
 }
 
 //func (c *LiveConnection) Send(path string, msg *osc.OscMessage) {
-func (c *LiveConnection) Send(path string, args ...interface{} ) {
+func (c *LiveConnection) Send(path string, cbk bool, args ...interface{} ) {
   msg := osc.NewOscMessage(path)
   //fmt.Println(args)
 
@@ -98,11 +101,27 @@ func (c *LiveConnection) Send(path string, args ...interface{} ) {
     // element is the element from args for where we are
     msg.Append(element) //int32(111)
   }
-  fmt.Println(msg.Arguments)
+  //fmt.Println(msg.Arguments)
   fmt.Println(fmt.Sprintf("sent to %s", path))
-  fmt.Println(c.connection)
+  //fmt.Println(c.connection)
   c.connection.Send(msg)
+  if cbk {
+    c.get_callback()
+  }
 }
+
+func (c *LiveConnection) get_callback() *osc.OscMessage {
+
+  for len(server_response) <= 0 {
+    time.Sleep(1 * time.Millisecond)
+  }
+
+  fmt.Println("Server response:", server_response[0])
+  return_value := server_response[0]
+  server_response = nil // clear array
+  return return_value
+}
+
 
 
 /*
