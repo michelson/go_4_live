@@ -4,38 +4,96 @@ import(
   "fmt"
   "github.com/hypebeast/go-osc/osc"
   //"./live_connection"
-  //"time"
+  "time"
   )
 
-var Cfg = Config{host: "localhost", port: 8080}
-var conn = NewLiveConnection(Cfg.host, Cfg.port) //client(&config)
+var Cfg = Config{host: "localhost", send_port: 7402, receive_port: 7403}
+var conn = NewLiveConnection(Cfg.host, Cfg.send_port, Cfg.receive_port) //client(&config)
+var channel chan string = make(chan string)
 
 func main(){
-  fmt.Println(fmt.Sprintf("Creating OSC Client - IP: %s, Port: %d", Cfg.host, Cfg.port))
-  conn.Send( "/live/tempo", int32(111) , string("hola"))
+
+  go conn.ListenAndServe()
+  go pinger()
+  var input string
+  fmt.Scanln(&input)
+}
+
+func pinger() {
+    for {
+      conn.Send( "/live_path", int32(111) , string("hola"))
+      time.Sleep(time.Second * 1)
+    }
 }
 
 type Config struct{
   host string
-  port int
+  send_port int
+  receive_port int
 }
 
 // LIVE CONNECTION
 
 type LiveConnection struct {
   host string
-  port int
+  send_port int
+  receive_port int
   connection osc.OscClient
   server osc.OscServer
 }
 
-func NewLiveConnection(host string, port int) *LiveConnection {
+func NewLiveConnection(host string, send_port int, receive_port int) *LiveConnection {
   //return &LiveConnection{host: host, port: port} //one liner
   p := new(LiveConnection)
   p.host = host
-  p.port = port
-  p.connection = *osc.NewOscClient(host, port)
+  p.send_port = send_port
+  p.receive_port = receive_port
+  p.server = *osc.NewOscServer(host, receive_port)
+  fmt.Println(fmt.Sprintf("Creating OSC Server - IP: %s, Port: %d", host, receive_port))
+  p.connection = *osc.NewOscClient(host, send_port)
+  fmt.Println(fmt.Sprintf("Creating OSC Client - IP: %s, Port: %d", host, send_port))
   return p
+}
+
+func (conn *LiveConnection) ListenAndServe(){
+
+  conn.server.AddMsgHandler("/test/address", func(msg *osc.OscMessage) {
+      //time.Sleep(time.Second * 1)
+      fmt.Println("Received message from " + msg.Address)
+      //foo := <- channel
+      //fmt.Println(foo)
+  })
+
+  //si
+  conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
+      fmt.Println("Received message from " + msg.Address)
+      //@response << [msg.address, msg.args]
+  })
+
+  //ss
+  conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
+      fmt.Println("Received message from " + msg.Address)
+      //@response << [msg.address, msg.args]
+  })
+
+  //s*
+  conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
+      fmt.Println("Received message from " + msg.Address)
+      //@response << [msg.address, msg.args]
+  })
+
+  //ssi
+  conn.server.AddMsgHandler("/slot3", func(msg *osc.OscMessage) {
+    fmt.Println("Received message from " + msg.Address)
+    //@response << [msg.address, msg.args]
+  })
+
+
+  fmt.Printf("Listening on %s:%d\n", conn.host, conn.receive_port)
+  err := conn.server.ListenAndServe()
+  if err != nil {
+    fmt.Println("Error")
+  }
 }
 
 //func (c *LiveConnection) Send(path string, msg *osc.OscMessage) {
