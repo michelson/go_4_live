@@ -57,34 +57,27 @@ func NewLiveConnection(host string, send_port int, receive_port int) *LiveConnec
 
 func (conn *LiveConnection) ListenAndServe(){
 
-  conn.server.AddMsgHandler("/test/address", func(msg *osc.OscMessage) {
-      //time.Sleep(time.Second * 1)
-      fmt.Println("Received message from " + msg.Address)
-      //foo := <- channel
-      //fmt.Println(foo)
-  })
-
   //si
   conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
-      fmt.Println("Received message from " + msg.Address)
+      fmt.Println("Received message from " + msg)
       //@response << [msg.address, msg.args]
   })
 
   //ss
   conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
-      fmt.Println("Received message from " + msg.Address)
+      fmt.Println("Received message from " + msg)
       //@response << [msg.address, msg.args]
   })
 
   //s*
   conn.server.AddMsgHandler("/slot1", func(msg *osc.OscMessage) {
-      fmt.Println("Received message from " + msg.Address)
+      fmt.Println("Received message from " + msg)
       //@response << [msg.address, msg.args]
   })
 
   //ssi
   conn.server.AddMsgHandler("/slot3", func(msg *osc.OscMessage) {
-    fmt.Println("Received message from " + msg.Address)
+    fmt.Println("Received message from " + msg)
     //@response << [msg.address, msg.args]
   })
 
